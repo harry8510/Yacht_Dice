@@ -29,8 +29,9 @@ void pressKey()
 }
 
 
-struct YachtPlayer
+class YachtPlayer
 {
+public:
 	int dice[6] = { 0 };
 	int Score[13] = { 0 };
 	int nowScore[13] = { 0 };
