@@ -5,41 +5,58 @@
 #include<Windows.h>
 #include<algorithm>
 
+const int UP = 0, DOWN = 1, LEFT = 2, RIGHT = 3, USE = 4, SELECT = 5;
 const int Aces = 1, Deuces = 2, Threes = 3, Fours = 4, Fives = 5, Sixes = 6,
-Choice = 7, Four_of_a_Kind = 8, Full_House = 9, Small_Straight = 10, Large_Straight = 11, Yacht = 12;
+          Choice = 7, Four_of_a_Kind = 8, Full_House = 9, Small_Straight = 10, Large_Straight = 11, Yacht = 12;
+
 CONSOLE_SCREEN_BUFFER_INFO presentCur, presentCur2;
 
 void gotoxy(int x, int y)
 {
-	COORD pos = { x,y };
+	COORD pos = {x, y};
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
 void pressKey()
 {
-	int buffer;
-	while (1)
-	{
-		if (kbhit())
-		{
-			buffer = getch();
-			break;
-		}
-	}
+	char buffer;
+	buffer = getch();
 }
 
+int getKey()
+{
+	char buffer;
+	buffer = getch();
+
+	if (buffer == 'w' || buffer == 'W')
+		return UP;
+	else if (buffer == 's' || buffer == 'S')
+		return DOWN;
+	else if (buffer == 'a' || buffer == 'A')
+		return LEFT;
+	else if (buffer == 'd' || buffer == 'D')
+		return RIGHT;
+	else if (buffer == 'f' || buffer == 'F')
+		return SELECT;
+	else if (buffer == 'e' || buffer == 'E')
+		return USE;
+	return 0;
+}
 
 class YachtPlayer
 {
-public:
 	int dice[6] = { 0 };
 	int Score[13] = { 0 };
 	int nowScore[13] = { 0 };
 	int checkScore[13] = { 0 };
-	int total = 0;
+	int isReroll[6] = { 0 };
 	int subtotal = 0;
-	int flag = 0;
+	int subtotalFlag = 0;
 
+public:
+
+	int total = 0;
+	void rollDiceReset();
 	void rollDice();
 	void showDice();
 	void rerollDice();
@@ -50,63 +67,98 @@ public:
 
 } player;
 
+void YachtPlayer::rollDiceReset()
+{
+	std::fill_n(isReroll, 6, 1);
+}
+
 void YachtPlayer::rollDice()
 {
-	printf(" Dice 1 | Dice 2 | Dice 3 | Dice 4 | Dice 5 \n");
+	gotoxy(0, presentCur.dwCursorPosition.Y);
+	printf("| Dice 1 | Dice 2 | Dice 3 | Dice 4 | Dice 5 \n");
 	for (int i = 1; i <= 10; i++)
 	{
 		gotoxy(0, presentCur.dwCursorPosition.Y + 1);
-		printf(" %6d | %6d | %6d | %6d | %6d", rand() % 6 + 1, rand() % 6 + 1, rand() % 6 + 1, rand() % 6 + 1, rand() % 6 + 1);
-		Sleep(100);
-	}
-	for (int i = 1; i <= 5; i++)
-	{
-		dice[i] = rand() % 6 + 1;
-	}
-}
-
-void YachtPlayer::showDice()
-{
-	gotoxy(0, presentCur.dwCursorPosition.Y);
-	printf(" Dice 1 | Dice 2 | Dice 3 | Dice 4 | Dice 5 \n");
-	printf(" %6d | %6d | %6d | %6d | %6d\n\n", dice[1], dice[2], dice[3], dice[4], dice[5]);
-	Sleep(500);
-}
-
-void YachtPlayer::rerollDice()
-{
-	int isReroll[6] = { 0 };
-
-	printf(" Input 1 to reroll, input 0 to save dice\n");
-	printf(" _ _ _ _ _\b\b\b\b\b\b\b\b\b");
-	for (int i = 1; i <= 5; i++)
-	{
-		scanf("%d", &isReroll[i]);
-	}
-	gotoxy(0, presentCur.dwCursorPosition.Y);
-	printf(" Dice 1 | Dice 2 | Dice 3 | Dice 4 | Dice 5 \n");
-	for (int i = 1; i <= 10; i++)
-	{
-		gotoxy(0, presentCur.dwCursorPosition.Y + 1);
-		printf(" %6d", isReroll[1] ? (rand() % 6 + 1) : dice[1]);
-		for (int j = 2; j <= 5; j++)
+		for (int j = 1; j <= 5; j++)
 		{
-			printf(" | %6d", isReroll[j] ? (rand() % 6 + 1) : dice[j]);
+			printf("| %6d ", isReroll[j] ? (rand() % 6 + 1) : dice[j]);
 		}
-		Sleep(100);
+		Sleep(100+10*i);
 	}
 	for (int i = 1; i <= 5; i++)
 	{
 		if (isReroll[i])
 			dice[i] = rand() % 6 + 1;
 	}
+	std::fill_n(isReroll, 6, 0);
+}
+
+void YachtPlayer::showDice()
+{
+	gotoxy(0, presentCur.dwCursorPosition.Y);
+	printf("| Dice 1 | Dice 2 | Dice 3 | Dice 4 | Dice 5 \n");
+	printf("| %6d | %6d | %6d | %6d | %6d\n\n", dice[1], dice[2], dice[3], dice[4], dice[5]);
+	Sleep(500);
+}
+
+void YachtPlayer::rerollDice()
+{
+	int input, position = 1;
+
+	printf(" Press F to select, press E to Confirm\n");
+	while (1)
+	{
+		gotoxy(0, presentCur.dwCursorPosition.Y+2);
+		for (int i = 1; i <= 5; i++)
+		{
+			if (position==i)
+			{
+				printf("| ¡ã     ");
+			}
+			else
+			{
+				printf("| ¡â     ");
+			}
+		}
+		for (int i = 1; i <= 5; i++)
+		{
+			gotoxy(9 * (i - 1) + 2, presentCur.dwCursorPosition.Y + 1);
+			if (isReroll[i])
+			{
+				printf("¡Ü");
+			}
+			else
+			{
+				printf("¡Û");
+			}
+		}
+		input = getKey();
+		if (input == USE)
+			break;
+		if (input == SELECT)
+		{
+			isReroll[position] = isReroll[position] ? 0 : 1;
+		}
+		if (input == RIGHT)
+		{
+			position++;
+		}
+		if (input == LEFT)
+		{
+			position--;
+		}
+		position += 5;
+		position = position % 5;
+		position = !(position) ? 5 : position;
+	}
+	rollDice();
+	std::fill_n(isReroll, 6, 0);
 }
 
 void YachtPlayer::calcExpectedScore()
 {
 	int sumDice[7] = { 0 }, sumCnt[6] = { 0 };
-	nowScore[0] = nowScore[1] = nowScore[2] = nowScore[3] = nowScore[4] = nowScore[5] = nowScore[6]
-		= nowScore[7] = nowScore[8] = nowScore[9] = nowScore[10] = nowScore[11] = nowScore[12] = 0;
+	std::fill_n(nowScore, 13, 0);
 
 	for (int i = 1; i <= 5; i++)
 	{
@@ -117,12 +169,12 @@ void YachtPlayer::calcExpectedScore()
 		sumCnt[sumDice[i]]++;
 	}
 
-	nowScore[Aces] = sumDice[1] * 1;
+	nowScore[Aces]   = sumDice[1] * 1;
 	nowScore[Deuces] = sumDice[2] * 2;
 	nowScore[Threes] = sumDice[3] * 3;
-	nowScore[Fours] = sumDice[4] * 4;
-	nowScore[Fives] = sumDice[5] * 5;
-	nowScore[Sixes] = sumDice[6] * 6;
+	nowScore[Fours]  = sumDice[4] * 4;
+	nowScore[Fives]  = sumDice[5] * 5;
+	nowScore[Sixes]  = sumDice[6] * 6;
 	nowScore[Choice] = nowScore[Aces] + nowScore[Deuces] + nowScore[Threes] + nowScore[Fours] + nowScore[Fives] + nowScore[Sixes];
 	if (sumCnt[5] == 1)
 		nowScore[Yacht] = 50;
@@ -136,9 +188,9 @@ void YachtPlayer::calcExpectedScore()
 		nowScore[Large_Straight] = 30;
 
 	subtotal = Score[Aces] + Score[Deuces] + Score[Threes] + Score[Fours] + Score[Fives] + Score[Sixes];
-	if (subtotal >= 63 && flag == 0)
+	if (subtotal >= 63 && subtotalFlag == 0)
 	{
-		flag = 1;
+		subtotalFlag = 1;
 		total += 35;
 	}
 }
@@ -148,7 +200,7 @@ void YachtPlayer::showExpectedScore()
 	char buf[13][10];
 	for (int i = 1; i <= 12; i++)
 	{
-		if (checkScore[i])
+		if (!isAbleCategories(i))
 		{
 			itoa(Score[i], buf[i], 10);
 			continue;
@@ -195,6 +247,7 @@ void rollFirst(int turn)
 	printf("Press any key to Roll\n\n");
 	pressKey();
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &presentCur);
+	player.rollDiceReset();
 	player.rollDice();
 	player.showDice();
 	player.calcExpectedScore();
@@ -237,7 +290,7 @@ void rollThird(int turn)
 
 void select(int turn)
 {
-	int input;
+	int input, position = 1;
 
 	printf(" %d / 12 Turn \n\n", turn);
 	printf("Time to Select\n");
@@ -248,23 +301,45 @@ void select(int turn)
 	player.calcExpectedScore();
 	player.showExpectedScore();
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &presentCur2);
+
+	printf(" Press F to select\n");
 	while (1)
 	{
-		gotoxy(0, presentCur2.dwCursorPosition.Y);
-		printf("\n Select The Number : __\b\b");
-		scanf("%d", &input);
-		if (input < 1 || input > 12)
+		for (int i = 1; i <= 12; i++)
 		{
-			printf("Not Available\n");
-			continue;
+			gotoxy(50, presentCur.dwCursorPosition.Y + 4 + i + (i>=7));
+			if (position == i)
+			{
+				printf("¢¸");
+			}
+			else
+			{
+				printf(" ");
+			}
 		}
-		if (!player.isAbleCategories(input))
+		input = getKey();
+		if (input == SELECT)
 		{
-			printf("Already Selected\n");
-			continue;
+			if (!player.isAbleCategories(position))
+			{
+				gotoxy(0, presentCur2.dwCursorPosition.Y+1);
+				printf("Already Selected\n");
+				continue;
+			}
+			player.selectCategories(position);
+			break;
 		}
-		player.selectCategories(input);
-		break;
+		if (input == DOWN)
+		{
+			position++;
+		}
+		if (input == UP)
+		{
+			position--;
+		}
+		position += 12;
+		position = position % 12;
+		position = !(position) ? 12 : position;
 	}
 	system("cls");
 	printf(" %d / 12 Turn \n\n", turn);
@@ -300,8 +375,8 @@ void printMainMenu()
 	system("cls");
 	printf("\n\n");
 	printf(" ===== YACHT single by metroa =====\n");
-	printf(" =====       version 0.1      =====\n\n");
-	printf("     Press any key to continue");
+	printf(" =====     version 0.0.1      =====\n\n");
+	printf("     Press any key to continue     ");
 	pressKey();
 	playYacht();
 }
